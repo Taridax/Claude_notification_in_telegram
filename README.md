@@ -25,7 +25,16 @@ python3 scripts/notify_telegram.py "Привет из Claude"
 echo "текст из stdin" | python3 scripts/notify_telegram.py
 ```
 
-## Периодические задачи
+## Ежедневный дайджест законодательства
 
-Используйте Routine (запуск по расписанию) в Claude Code: на каждый запуск создаётся
-новая сессия на этом репозитории, Claude выполняет задачу, а hook `Stop` присылает результат в Telegram.
+`scripts/fetch_feeds.py` читает RSS lex.uz и norma.uz и выдаёт записи, которых нет в
+`state/seen.json`. По будням в 9:12 (Ташкент) Routine запускает Claude по инструкции
+[`DIGEST.md`](DIGEST.md): Claude отбирает новости о строительстве и проектировании и
+отправляет дайджест в группу. Если подходящих новостей нет, ничего не отправляется.
+Чтобы изменить тематику или формат, отредактируйте `DIGEST.md`.
+
+```sh
+python3 scripts/fetch_feeds.py          # новые записи (JSON), состояние не меняется
+python3 scripts/fetch_feeds.py --all    # все записи из лент
+python3 scripts/notify_telegram.py --chat -1003022426387 "текст"   # отправка в один чат
+```
