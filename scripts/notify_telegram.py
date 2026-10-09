@@ -7,6 +7,7 @@ Usage:
   notify_telegram.py --hook          # read Claude Code hook JSON from stdin
 
 Reads TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID from the environment.
+TELEGRAM_CHAT_ID may hold several ids separated by commas: "111,222".
 In --hook mode it never fails the hook: errors go to stderr, exit code is 0.
 """
 import json
@@ -19,13 +20,7 @@ import urllib.request
 MAX_LEN = 4000  # Telegram limit is 4096 characters per message
 
 
-def send(text):
-    token = os.environ.get("TELEGRAM_BOT_TOKEN")
-    chat_id = os.environ.get("TELEGRAM_CHAT_ID")
-    if not token or not chat_id:
-        raise RuntimeError("TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID is not set")
-    if len(text) > MAX_LEN:
-        text = text[: MAX_LEN - 1] + "…"
+def send_one(token, chat_id, text):
     data = urllib.parse.urlencode({"chat_id": chat_id, "text": text}).encode()
     url = f"https://api.telegram.org/bot{token}/sendMessage"
     try:
@@ -34,7 +29,24 @@ def send(text):
     except urllib.error.HTTPError as e:
         body = json.load(e)
     if not body.get("ok"):
-        raise RuntimeError(f"Telegram API error: {body.get('description')}")
+        raise RuntimeError(f"chat {chat_id}: {body.get('description')}")
+
+
+def send(text):
+    token = os.environ.get("TELEGRAM_BOT_TOKEN")
+    chat_ids = [c.strip() for c in os.environ.get("TELEGRAM_CHAT_ID", "").split(",") if c.strip()]
+    if not token or not chat_ids:
+        raise RuntimeError("TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID is not set")
+    if len(text) > MAX_LEN:
+        text = text[: MAX_LEN - 1] + "…"
+    errors = []
+    for chat_id in chat_ids:  # one bad chat must not block the others
+        try:
+            send_one(token, chat_id, text)
+        except Exception as e:
+            errors.append(str(e))
+    if errors:
+        raise RuntimeError("Telegram API error: " + "; ".join(errors))
 
 
 def hook_text(event):

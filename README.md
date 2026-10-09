@@ -13,7 +13,8 @@
    `https://api.telegram.org/bot<TOKEN>/getUpdates` и возьмите `message.chat.id`.
 3. Задайте переменные окружения (в облачном окружении Claude Code: настройки окружения → Edit):
    - `TELEGRAM_BOT_TOKEN`
-   - `TELEGRAM_CHAT_ID`
+   - `TELEGRAM_CHAT_ID`: один id или несколько через запятую, например `111111111,-1002222222222`
+     (сообщение уйдёт в каждый чат)
 
 Не коммитьте токен в репозиторий.
 
