@@ -8,7 +8,9 @@ Usage:
   notify_telegram.py --hook          # read Claude Code hook JSON from stdin
 
 Reads TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID from the environment.
-TELEGRAM_CHAT_ID may hold several ids separated by commas: "111,222".
+TELEGRAM_CHAT_ID may hold several ids separated by commas: "111,-100222".
+Without --chat only personal chats (positive ids) get the message; groups and
+channels (negative ids) receive only what is sent to them explicitly with --chat.
 Long texts are split into several messages on line boundaries.
 In --hook mode it never fails the hook: errors go to stderr, exit code is 0.
 Hooks are skipped when the file .no-telegram-hooks exists in the project root
@@ -54,7 +56,8 @@ def split(text):
 def send(text, chat_ids=None):
     token = os.environ.get("TELEGRAM_BOT_TOKEN")
     if chat_ids is None:
-        chat_ids = [c.strip() for c in os.environ.get("TELEGRAM_CHAT_ID", "").split(",") if c.strip()]
+        chat_ids = [c.strip() for c in os.environ.get("TELEGRAM_CHAT_ID", "").split(",")
+                    if c.strip() and not c.strip().startswith("-")]
     if not token or not chat_ids:
         raise RuntimeError("TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID is not set")
     errors = []
